@@ -18,6 +18,9 @@ const cookieParser = require("cookie-parser")
 
 const jwt = require("jsonwebtoken")
 
+//10.07
+const { userAuth } = require("./middlewares/auth")
+
 const app = express(); //new application of express,new express.js application i.e it is like creating new web server
 
 // app.use((req, res) => {
@@ -84,21 +87,29 @@ app.post("/login", async (req, res) => {
     const { emailId, password } = req.body
 
     const user = await User.findOne({emailId: emailId})
-    
+
     if(!user){
       throw new Error("Invalid credentials")
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password)
+    // const isPasswordValid = await bcrypt.compare(password, user.password)
+
+    //10.10 using helper/schema methods
+    const isPasswordValid = await user.validatePassword(password)
 
     if(isPasswordValid){
 
       //10.01 Create a JWT Token
 
-      const token = await jwt.sign({_id: user._id}, "RUPESH@2110") //here we are hiding user is by doing this {_id: user._id}
+      // const token = await jwt.sign({_id: user._id}, "RUPESH@2110", {
+      //   expiresIn: "7d"
+      // }) //here we are hiding user is by doing this {_id: user._id}
+
+      //10.09 using the helper/schema methods
+      const token = await user.getJWT()
 
       //10.01 Add the token to cookie and send the response back to the user
-      res.cookie("token",token)
+      res.cookie("token",token, {expires: new Date(Date.now() + 8 * 36000000)})
       res.send("Login Successful!!!")
     }else{
       console.log("here: ")
@@ -110,30 +121,22 @@ app.post("/login", async (req, res) => {
   }
 })
 
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
   try{
-    const cookies = req.cookies;
 
-  const {token} = cookies
+  const user = req.user
 
-  if(!token){
-    throw new Error("Invalid token")
-  }
-
-  const decodedMessage = await jwt.verify(token, "RUPESH@2110")
-
-  const {_id} = decodedMessage
-
-  const user = await User.findById({_id})
-
-  if(!token){
-    throw new Error("User does not exist")
-  }
-
-  res.send("Logged i user is " + user)
+  res.send("Logged in user is " + user)
   }catch(err){
     res.status(400).send("Error: " + err.message)
   }
+})
+
+app.post("/sendConnectionRequest", userAuth, (req, res) => {
+
+  const user = req.user
+
+  res.send("Connection Req sent by " + user.firstName)
 })
 
 //07.04 fetchAPI, get user by email
