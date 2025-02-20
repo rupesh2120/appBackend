@@ -9,6 +9,15 @@ const connectDB = require("./config/database")
 //06. 03 importing Model to store userObj
 const User = require("./models/user")
 
+//09.03
+const {validateSignUpData} = require("./utils/validation")
+const bcrypt = require("bcrypt")
+
+//10.02 to parse the cookies
+const cookieParser = require("cookie-parser")
+
+const jwt = require("jsonwebtoken")
+
 const app = express(); //new application of express,new express.js application i.e it is like creating new web server
 
 // app.use((req, res) => {
@@ -18,9 +27,21 @@ const app = express(); //new application of express,new express.js application i
 //07.02 middleware for converting json to js object, since here we are not passing any route just route handler hence it will work for all req
 app.use(express.json())
 
+//10.03
+app.use(cookieParser())
+
 
 //06. 02 creating a user using model
 app.post("/signup", async (req,res) => {
+  try{
+  //09.01 Validation of data whenever user signup.login and encrypt the password(we create a helper function to validate (in the utils folder))
+  validateSignUpData(req)
+
+  //09.04 need to encrypt the password before saving it to table
+  const {firstName, lastName, emailId, password} = req.body
+  const passwordHash = await bcrypt.hash(password, 10)
+
+  console.log(passwordHash)
 
   //07. 01 it will say undefined since req.body from the postman is in json format and our server is not able to read that, we need a middleware to convert JSON into js object.
   // console.log("Req: ", req.body)
@@ -36,15 +57,82 @@ app.post("/signup", async (req,res) => {
   //06. 04 creating a new instance of the user Model
   // const user = new User(userObj)
 
+
+  const existingUser = await User.findOne({ emailId });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
   //07.03 creating instance
-  const user = new User(req.body)
+  const user = new User({
+    firstName, lastName, emailId, password: passwordHash
+  })
 
   //06.05 saving data to model
-  try{
+  
     await user.save()
     res.send("User added successfully")
   }catch(err){
     res.status(400).send(`Error saving the user: ${err.message}`)
+  }
+})
+
+
+//09.05 login api
+app.post("/login", async (req, res) => {
+  try{
+    const { emailId, password } = req.body
+
+    const user = await User.findOne({emailId: emailId})
+    
+    if(!user){
+      throw new Error("Invalid credentials")
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+
+    if(isPasswordValid){
+
+      //10.01 Create a JWT Token
+
+      const token = await jwt.sign({_id: user._id}, "RUPESH@2110") //here we are hiding user is by doing this {_id: user._id}
+
+      //10.01 Add the token to cookie and send the response back to the user
+      res.cookie("token",token)
+      res.send("Login Successful!!!")
+    }else{
+      console.log("here: ")
+      throw new Error("Invalid credentials")
+    }
+
+  }catch(err){
+    res.status(400).send("Error: " + err.message)
+  }
+})
+
+app.get("/profile", async (req, res) => {
+  try{
+    const cookies = req.cookies;
+
+  const {token} = cookies
+
+  if(!token){
+    throw new Error("Invalid token")
+  }
+
+  const decodedMessage = await jwt.verify(token, "RUPESH@2110")
+
+  const {_id} = decodedMessage
+
+  const user = await User.findById({_id})
+
+  if(!token){
+    throw new Error("User does not exist")
+  }
+
+  res.send("Logged i user is " + user)
+  }catch(err){
+    res.status(400).send("Error: " + err.message)
   }
 })
 
