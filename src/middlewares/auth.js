@@ -7,7 +7,7 @@ const userAuth = async (req, res, next) => {
     const {token} = req.cookies;
 
     if(!token){
-      return res.status(401).send("You are logged in!!");
+      return res.status(401).send("Please Login!!");
     }
 
     const decodedMessage = await jwt.verify(token, "RUPESH@2110") 
