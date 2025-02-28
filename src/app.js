@@ -2,6 +2,8 @@
 console.log("starting a new project")
 
 const express = require('express');
+//from UI Part 2
+const cors = require("cors")
 
 //06. 00 importing DB
 const connectDB = require("./config/database")
@@ -27,6 +29,12 @@ const app = express(); //new application of express,new express.js application i
 //   res.send("Hello from the server") //this function is request handler and it is responding to the request
 // })
 
+//from UI Part 2(origin: "http://local" //whitelisting this domain name set cookies in the ui side as well(if you don't provide this, cookies will not be set due to unsecured network))
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}))
+
 //07.02 middleware for converting json to js object, since here we are not passing any route just route handler hence it will work for all req
 app.use(express.json())
 
@@ -36,11 +44,14 @@ app.use(cookieParser())
 //11.04 importing all the routers
 const authRouter = require("./routes/auth")
 const profileRouter = require("./routes/profile")
-const requestRouter = require("./routes/requests")
+const requestRouter = require("./routes/requests");
+const userRouter = require('./routes/user');
 
 app.use("/", authRouter)
 app.use("/", profileRouter)
 app.use("/", requestRouter)
+//13.03
+app.use("/", userRouter)
 
 
 //06. 02 creating a user using model

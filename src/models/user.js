@@ -9,7 +9,8 @@ const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
     required: true, //08.01 it must be there
-    minLength: 4
+    index: true, // 12.08
+    minLength: 4,
   },
   lastName: {
     type: String
@@ -40,6 +41,10 @@ const userSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
+    enum: {
+      values: ["male", "female", "others"],
+      message: `{VALUE} is incorrected gender type`
+    }, //12.02
     validate(value){
       if(!["male", "female", "others"].includes(value)){
         throw new Error("Gender data is not valid")
@@ -66,12 +71,9 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// const User = mongoose.model("User", userSchema);
 
-// module.exports = User
-
-//OR
-
+//12.09, compound index
+userSchema.index({firstName: 1, lastName: 1})
 
 //10.07 helper method for jwt token
 
@@ -97,5 +99,11 @@ userSchema.methods.validatePassword = async function(passwordInputByUser){
 
   return isPasswordValid
 }
+
+// const User = mongoose.model("User", userSchema);
+
+// module.exports = User
+
+//OR
 
 module.exports = mongoose.model("User", userSchema);
