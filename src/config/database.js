@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
+//Season 3 part 5
+// require("dotenv").config()
 
 const connectDB = async () => {
-  await mongoose.connect("mongodb+srv://namastedev:WqF0z4T4iZuKepBA@namastenode.vbecc.mongodb.net/devTinder")
+  await mongoose.connect(process.env.DB_CONNECTION_SECRET)
 }
 
 module.exports = connectDB;

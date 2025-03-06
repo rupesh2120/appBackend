@@ -5,6 +5,9 @@ const express = require('express');
 //from UI Part 2
 const cors = require("cors")
 
+//Season 3 part 5
+require("dotenv").config()
+
 //06. 00 importing DB
 const connectDB = require("./config/database")
 
@@ -234,7 +237,7 @@ app.use("/", userRouter)
 connectDB().then(() => {
   console.log("Database connected successfully")
 
-  app.listen(3000, () => { // listening to server after DB connected successfully
+  app.listen(process.env.PORT, () => { // listening to server after DB connected successfully
     console.log("server is successfully listening on port 3000")
   }); 
 }).catch((err) => {
